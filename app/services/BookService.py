@@ -4,13 +4,16 @@ from fastapi import Depends, HTTPException
 
 from app.models.BookModel import Book, BookCreate, BookUpdate
 from app.repositories.BookRepo import BookRepository
+from app.services import AuthorService
 
 
 class BookService:
     bookRepo: BookRepository
+    authorService: AuthorService
 
-    def __init__(self, bookRepo: BookRepository = Depends()) -> None:
+    def __init__(self, bookRepo: BookRepository = Depends(), authorService: AuthorService = Depends()) -> None:
         self.bookRepo = bookRepo
+        self.authorService = authorService
 
     def create(self, book: BookCreate) -> Book:
         db_book = Book.model_validate(book)
@@ -23,6 +26,9 @@ class BookService:
         return self.bookRepo.get(id)
 
     def update(self, id: int, book: BookUpdate) -> Book:
+        if book.author_id:
+            if not self.authorService.get(book.author_id):
+                raise HTTPException(status_code=404, detail="Author not found")
         book_db = self.bookRepo.get(id)
         if not book_db:
             raise HTTPException(status_code=404, detail="Book not found")

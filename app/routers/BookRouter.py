@@ -1,9 +1,8 @@
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 
 from app.models.BookModel import BookCreate, BookPublic, BookUpdate
-from app.services.AuthorService import AuthorService
 from app.services.BookService import BookService
 
 router = APIRouter(prefix="/books", tags=["books"])
@@ -29,11 +28,7 @@ def update_book(
     book_id: int,
     book: BookUpdate,
     bookService: BookService = Depends(),
-    authorService: AuthorService = Depends(),
 ):
-    if book.author_id:
-        if not authorService.get(book.author_id):
-            raise HTTPException(status_code=404, detail="Author not found")
     return bookService.update(book_id, book)
 
 
