@@ -1,36 +1,21 @@
-from typing import List, Optional
+from typing import List
 
+from app.configs.Database import get_session
 from fastapi import Depends
-from sqlmodel import Session
-
-from configs.Database import SessionDep
-from models.BookModel import Book
+from app.models.BookModel import Book
+from sqlmodel import Session, select
 
 class BookRepository:
     db: Session
 
-    def __init__(
-        self, db: Session = Depends(SessionDep)
-    ) -> None:
+    def __init__(self, db: Session = Depends(get_session)) -> None:
         self.db = db
 
-    def list(
-        self,
-        name: Optional[str],
-        limit: Optional[int],
-        start: Optional[int],
-    ) -> List[Book]:
-        query = self.db.query(Book)
+    def list(self) -> List[Book]:
+        return self.db.exec(select(Book)).all()
 
-        if name:
-            query = query.filter_by(name=name)
-
-        return query.offset(start).limit(limit).all()
-
-    def get(self, book: Book) -> Book:
-        return self.db.get(
-            Book, book.id
-        )
+    def get(self, id: int) -> Book:
+        return self.db.get(Book, id)
 
     def create(self, book: Book) -> Book:
         self.db.add(book)
@@ -38,13 +23,12 @@ class BookRepository:
         self.db.refresh(book)
         return book
 
-    def update(self, id: int, book: Book) -> Book:
-        book.id = id
-        self.db.merge(book)
+    def update(self, book_db: Book) -> Book:
+        self.db.add(book_db)
         self.db.commit()
-        return book
+        self.db.refresh(book_db)
+        return book_db
 
     def delete(self, book: Book) -> None:
         self.db.delete(book)
         self.db.commit()
-        self.db.flush()

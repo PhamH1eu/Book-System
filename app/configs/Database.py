@@ -1,5 +1,5 @@
-from typing_extensions import Annotated
-from fastapi import Depends
+from contextlib import asynccontextmanager
+from fastapi import FastAPI
 from sqlalchemy import create_engine
 from sqlmodel import SQLModel, Session
 
@@ -11,7 +11,7 @@ env = get_environment_variables()
 # Generate Database URL
 # DATABASE_URL = f"{env.DATABASE_DIALECT}://{env.DATABASE_USERNAME}:{env.DATABASE_PASSWORD}@{env.DATABASE_HOSTNAME}:{env.DATABASE_PORT}/{env.DATABASE_NAME}"
 
-DATABASE_URL = f"sqlite:///./database.db"
+DATABASE_URL = "sqlite:///./database.db"
 
 # Create Database Engine
 Engine = create_engine(
@@ -21,8 +21,19 @@ Engine = create_engine(
 def get_session():
     with Session(Engine) as session:
         yield session
-
+        
 def create_db_and_tables():
     SQLModel.metadata.create_all(Engine)
-
-SessionDep = Annotated[Session, Depends(get_session)]
+        
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup: Run before the application starts
+    create_db_and_tables()
+    yield
+    # Shutdown: Run after the application shuts down
+    print("Application shutdown")
+        
+def create_app():
+    app = FastAPI(lifespan=lifespan)
+    app.dependency_overrides[Session] = get_session()
+    return app
