@@ -1,11 +1,10 @@
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi.security import OAuth2PasswordRequestForm
 from typing_extensions import Annotated
 from fastapi import APIRouter, Depends
 
-from app.models.UserModel import Token, User, UserCreate
+from app.models.UserModel import Token, TokenData, User, UserCreate
 from app.services.AuthService import AuthService
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 router = APIRouter(tags=["security"])
 
 
@@ -24,9 +23,8 @@ async def register(
     return authService.create_user(user)
 
 
-@router.get("/users/me/", response_model=User)
+@router.get("/users/me/")
 async def get_current_user(
-    authService: Annotated[AuthService, Depends()],
-    auth: Annotated[OAuth2PasswordBearer, Depends(oauth2_scheme)],
+    current_user: Annotated[TokenData, Depends(AuthService().get_current_user)],
 ) -> User:
-    return authService.get_current_active_user(auth)
+    return current_user

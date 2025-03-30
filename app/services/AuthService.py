@@ -10,7 +10,7 @@ from typing import Annotated
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 
-from app.models.UserModel import User, UserCreate, UserInDB, Token, TokenData
+from app.models.UserModel import UserCreate, UserInDB, Token, TokenData
 from app.repositories.UserRepo import UserRepository
 
 env = get_environment_variables()
@@ -30,15 +30,13 @@ credentials_exception = HTTPException(
 
 
 def verify_password(plain_password, hashed_password):
-    # return pwd_context.verify(plain_password, hashed_password)
-    password_byte_enc = plain_password.encode("utf-8")
     return bcrypt.checkpw(
-        password=password_byte_enc, hashed_password=hashed_password.encode("utf-8")
+        password=plain_password.encode("utf-8"),
+        hashed_password=hashed_password.encode("utf-8"),
     )
 
 
 def get_password_hash(password):
-    # return pwd_context.hash(password)
     pwd_bytes = password.encode("utf-8")
     salt = bcrypt.gensalt()
     hashed_password = bcrypt.hashpw(password=pwd_bytes, salt=salt)
@@ -56,50 +54,30 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
     return encoded_jwt
 
 
-def get_token_data(token: Annotated[str, Depends(oauth2_scheme)]):
-    print("Token:", token)
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        username = payload.get("sub")
-        if username is None:
-            raise credentials_exception
-        token_data = TokenData(username=username)
-    except InvalidTokenError:
-        raise credentials_exception
-    return token_data
-
-
 class AuthService:
     authRepo: UserRepository
 
     def __init__(self, authRepo: UserRepository = Depends()):
         self.authRepo = authRepo
 
-    def get_user(self, username: str):
-        user = self.authRepo.getByUsername(username)
-        if user is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="User not found",
-            )
-        return user
-
     def authenticate_user(self, username: str, password: str):
-        user = self.get_user(username)
+        user = self.authRepo.getByUsername(username)
         if not user:
             return False
         if not verify_password(password, user.hashed_password):
             return False
         return user
 
-    def get_current_active_user(
-        self,
-        current_user: Annotated[User, Depends(get_token_data)],
-    ):
-        user = self.get_user(username=current_user.username)
-        if user is None:
+    def get_current_user(self, token: Annotated[str, Depends(oauth2_scheme)]):
+        try:
+            payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+            username = payload.get("sub")
+            if username is None:
+                raise credentials_exception
+            token_data = TokenData(username=username)
+        except InvalidTokenError:
             raise credentials_exception
-        return user
+        return token_data
 
     def create_user(self, user: UserCreate):
         existing_user = self.authRepo.getByUsername(user.username)
@@ -108,11 +86,8 @@ class AuthService:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Username already registered",
             )
-        user_dict = user.model_dump()  # Lấy dictionary từ user
-        user_dict["hashed_password"] = get_password_hash(
-            user.password
-        )  # Thêm hashed_password
-        # user_dict["hashed_password"] = self.get_password_hash(user.password)
+        user_dict = user.model_dump()
+        user_dict["hashed_password"] = get_password_hash(user.password)
         db_user = UserInDB.model_validate(user_dict)
         return self.authRepo.create(db_user)
 
