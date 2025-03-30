@@ -21,14 +21,18 @@ def get_author(person_id: int, authorService: Annotated[AuthorService, Depends()
 
 
 @router.post("/", response_model=AuthorPublic)
-def create_author(author_new: AuthorCreate, authorService: Annotated[AuthorService, Depends()]):
+def create_author(
+    author_new: AuthorCreate, authorService: Annotated[AuthorService, Depends()]
+):
     response = authorService.create(author_new)
     return response
 
 
 @router.put("/{person_id}", response_model=AuthorPublic)
 def update_author(
-    person_id: int, author: AuthorUpdate, authorService: Annotated[AuthorService, Depends()]
+    person_id: int,
+    author: AuthorUpdate,
+    authorService: Annotated[AuthorService, Depends()],
 ):
     update_response = authorService.update(person_id, author)
     return update_response
