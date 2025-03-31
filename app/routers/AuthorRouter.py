@@ -4,8 +4,9 @@ from fastapi import APIRouter, Depends
 
 from app.models.AuthorModel import AuthorCreate, AuthorPublic, AuthorUpdate
 from app.services.AuthorService import AuthorService
+from app.services.AuthService import validate_token
 
-router = APIRouter(prefix="/authors", tags=["authors"])
+router = APIRouter(prefix="/authors", tags=["authors"], dependencies=[Depends(validate_token)])
 
 
 @router.get("/", response_model=List[AuthorPublic])

@@ -4,8 +4,9 @@ from fastapi import APIRouter, Depends
 
 from app.models.BookModel import BookCreate, BookPublic, BookUpdate
 from app.services.BookService import BookService
+from app.services.AuthService import validate_token
 
-router = APIRouter(prefix="/books", tags=["books"])
+router = APIRouter(prefix="/books", tags=["books"], dependencies=[Depends(validate_token)])
 
 
 @router.get("/", response_model=List[BookPublic])

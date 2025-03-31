@@ -53,6 +53,16 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
+def validate_token(token: Annotated[str, Depends(oauth2_scheme)]):
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username = payload.get("sub")
+        print(username)
+        if username is None:
+            raise credentials_exception
+    except InvalidTokenError:
+        raise credentials_exception
+    return username
 
 class AuthService:
     authRepo: UserRepository
@@ -67,17 +77,6 @@ class AuthService:
         if not verify_password(password, user.hashed_password):
             return False
         return user
-
-    def get_current_user(self, token: Annotated[str, Depends(oauth2_scheme)]):
-        try:
-            payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-            username = payload.get("sub")
-            if username is None:
-                raise credentials_exception
-            token_data = TokenData(username=username)
-        except InvalidTokenError:
-            raise credentials_exception
-        return token_data
 
     def create_user(self, user: UserCreate):
         existing_user = self.authRepo.getByUsername(user.username)
