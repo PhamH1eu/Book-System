@@ -12,7 +12,7 @@ router = APIRouter(tags=["security"])
 def login(sign_in_response: Annotated[Token, Depends(sign_in)]) -> Token:
     return sign_in_response
 
-@router.post("/refresh")
+@router.get("/refresh")
 async def refresh_access_token(new_access_token: Annotated[Token, Depends(refresh_token)]) -> Token:
     return new_access_token
 
@@ -25,6 +25,6 @@ def register(user_response: Annotated[User, Depends(create_user)]) -> User:
 def get_current_user(current_user: Annotated[str, Depends(validate_token_middleware)]):
     return current_user
 
-@router.post("/logout")
+@router.get("/logout")
 def log_out(response = Depends(logout)):
     return response

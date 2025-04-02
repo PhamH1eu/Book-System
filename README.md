@@ -6,9 +6,43 @@
 - **Tìm kiếm**: Elasticsearch  
 - **Đóng gói**: Docker + Docker Compose  
 
+Cấu trúc theo MVC
+
 ---
 
 ## 📌 **Các API chính**  
+
+### Auth
+#### Đăng nhập
+- **POST** `/login`  
+- **Dữ liệu**:  
+  ```json
+  { "username": "Username", "password": "password" }
+  ```
+- **Trả về**: Access token + Refresh token
+
+#### 🔍 Refresh access token
+- **GET** `/refresh`  
+- **Trả về**: New access token
+
+#### ✏️ Register
+- **POST** `/register`  
+- **Dữ liệu** Đăng ký user
+  ```json
+  { "username": "", "email": "", "fullname": "", "pasword": "" }
+  ```
+- **Trả về**: User mới
+
+#### ❌ Get current user
+- **GET** `/users/me`  
+- **Trả về**: Username get from access token
+
+#### ❌ Logout
+- **POST** `/logout`  
+- **Trả về**: Logout user bằng cách thêm user vào blacklist trong redis với format TOKEN_BLACK_LIST_username.
+
+#### Middleware validate token
+- **Trả về**: Decode token và check username có trong blacklist redis hay ko, có thì đã logout, ko thì pass. Set TTL = refresh token expire time
 
 ### 📖 Quản lý Sách  
 
@@ -20,11 +54,11 @@
   ```
 - **Trả về**: Sách vừa thêm  
 
-#### 🔍 Xem chi tiết sách *(có cache Redis)*  
+#### 🔍 Xem chi tiết sách  
 - **GET** `/books/{book_id}`  
 - **Trả về**: Thông tin sách  
 
-#### ✏️ Cập nhật sách *(xóa cache Redis)*  
+#### ✏️ Cập nhật sách 
 - **PUT** `/books/{book_id}`  
 - **Dữ liệu** (có thể cập nhật một phần):  
   ```json
@@ -32,7 +66,7 @@
   ```
 - **Trả về**: Sách đã cập nhật  
 
-#### ❌ Xóa sách *(xóa cache Redis)*  
+#### ❌ Xóa sách
 - **DELETE** `/books/{book_id}`  
 - **Trả về**: Thông báo thành công  
 
@@ -74,23 +108,10 @@
 
 ### 1️⃣ **Cài đặt Python & Thư viện**  
 ```bash
-pip install fastapi uvicorn redis elasticsearch
-```
-
-### 2️⃣ **Chạy Redis & Elasticsearch (Docker)**  
-```bash
-docker-compose up -d
+pip install -r requirements.txt
 ```
 
 ### 3️⃣ **Chạy API**  
 ```bash
-uvicorn app:app --reload
+uvicorn app.main:app --reload
 ```
-
----
-
-## 🎯 **Mục tiêu học tập**  
-✅ Xây dựng API với **FastAPI**  
-✅ Tích hợp **Redis** để cache dữ liệu  
-✅ Dùng **Elasticsearch** cho tìm kiếm  
-✅ **Docker hóa** ứng dụng  

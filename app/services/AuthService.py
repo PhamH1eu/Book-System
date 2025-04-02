@@ -25,6 +25,7 @@ env = get_environment_variables()
 SECRET_KEY = env.SECRET_KEY
 ALGORITHM = env.ALGORITHM
 ACCESS_TOKEN_EXPIRE_MINUTES = int(env.ACCESS_TOKEN_EXPIRE_MINUTES)
+REFRESH_TOKEN_EXPIRE_DAYS = int(env.REFRESH_TOKEN_EXPIRE_DAYS)
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -68,7 +69,7 @@ def create_refresh_token(data: dict, expires_delta: timedelta | None = None):
     if expires_delta:
         expire = datetime.now(timezone.utc) + expires_delta
     else:
-        expire = datetime.now(timezone.utc) + timedelta(days=7)
+        expire = datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
     to_encode.update({"exp": expire, "token_type": TokenType.REFRESH})
     encoded_jwt: str = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
@@ -76,7 +77,7 @@ def create_refresh_token(data: dict, expires_delta: timedelta | None = None):
 
 def blacklist_tokens(access_token, redis: Redis) -> None:
     username = decode_token(access_token)
-    redis.set(f"TOKEN_BLACK_LIST_{username}", 1)
+    redis.set(f"TOKEN_BLACK_LIST_{username}", 1, ex=timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS))
 
 
 def is_token_blacklisted(token: str, redis: Redis) -> bool:
