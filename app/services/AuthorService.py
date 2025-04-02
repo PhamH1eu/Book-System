@@ -1,10 +1,11 @@
 from typing import List
 
-from fastapi import Depends, HTTPException
+from fastapi import Depends
 
 from app.models.AuthorModel import Author, AuthorCreate, AuthorUpdate
 from app.repositories.AuthorRepo import AuthorRepository
 
+from app.exceptions import ResourceNotFoundException
 
 class AuthorService:
     authorRepo: AuthorRepository
@@ -25,7 +26,7 @@ class AuthorService:
     def update(self, id: int, author: AuthorUpdate) -> Author:
         author_db = self.authorRepo.get(id)
         if not author_db:
-            raise HTTPException(status_code=404, detail="Author not found")
+            raise ResourceNotFoundException(resource="Author", resource_id=id)
         author_data = author.model_dump(exclude_unset=True)
         author_db.sqlmodel_update(author_data)
         return self.authorRepo.update(author_db)
@@ -33,5 +34,5 @@ class AuthorService:
     def delete(self, id: int) -> None:
         author = self.authorRepo.get(id)
         if not author:
-            raise HTTPException(status_code=404, detail="Author not found")
+            raise ResourceNotFoundException(resource="Author", resource_id=id)
         return self.authorRepo.delete(author)

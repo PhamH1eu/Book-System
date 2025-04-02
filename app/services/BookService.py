@@ -1,11 +1,12 @@
 from typing import List
 
-from fastapi import Depends, HTTPException
+from fastapi import Depends
 
 from app.models.BookModel import Book, BookCreate, BookUpdate
 from app.repositories.BookRepo import BookRepository
 from app.services.AuthorService import AuthorService
 
+from app.exceptions import ResourceNotFoundException
 
 class BookService:
     bookRepo: BookRepository
@@ -22,7 +23,7 @@ class BookService:
     def create(self, book: BookCreate) -> Book:
         if book.author_id:
             if not self.authorService.get(book.author_id):
-                raise HTTPException(status_code=404, detail="Author not found")
+                raise ResourceNotFoundException(resource="Author", resource_id=book.author_id)
         db_book = Book.model_validate(book)
         return self.bookRepo.create(db_book)
 
@@ -35,10 +36,10 @@ class BookService:
     def update(self, id: int, book: BookUpdate) -> Book:
         if book.author_id:
             if not self.authorService.get(book.author_id):
-                raise HTTPException(status_code=404, detail="Author not found")
+                raise ResourceNotFoundException(resource="Author", resource_id=book.author_id)
         book_db = self.bookRepo.get(id)
         if not book_db:
-            raise HTTPException(status_code=404, detail="Book not found")
+            raise ResourceNotFoundException(resource="Book", resource_id=id)
         book_data = book.model_dump(exclude_unset=True)
         book_db.sqlmodel_update(book_data)
         print(book_db)
@@ -47,5 +48,5 @@ class BookService:
     def delete(self, id: int) -> None:
         book = self.bookRepo.get(id)
         if not book:
-            raise HTTPException(status_code=404, detail="Book not found")
+            raise ResourceNotFoundException(resource="Book", resource_id=id)
         return self.bookRepo.delete(book)
