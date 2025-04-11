@@ -6,12 +6,17 @@ from app.models.BookModel import BookCreate, BookPublic, BookUpdate
 from app.services.BookService import BookService
 from app.services.AuthService import validate_token_middleware
 
-router = APIRouter(prefix="/books", tags=["books"], dependencies=[Depends(validate_token_middleware)])
+router = APIRouter(prefix="/books", tags=["books"])
 
 
 @router.get("/", response_model=List[BookPublic])
 def get_all_books(bookService: BookService = Depends()):
     return bookService.list()
+
+
+@router.get("/search")
+def search_books(query: str, bookService: BookService = Depends()):
+    return bookService.search(query);
 
 
 @router.get("/{book_id}", response_model=BookPublic)
@@ -37,8 +42,3 @@ def update_book(
 def delete_book(book_id: int, bookService: BookService = Depends()):
     bookService.delete(book_id)
     return {"message": f"Book {book_id} has been deleted."}
-
-
-# @router.get("/search", response_model=BookPublic)
-# def search_books(query: str):
-#     pass

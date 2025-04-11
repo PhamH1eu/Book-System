@@ -50,3 +50,6 @@ class BookService:
         if not book:
             raise ResourceNotFoundException(resource="Book", resource_id=id)
         return self.bookRepo.delete(book)
+    
+    def search(self, keyword: str):
+        return self.bookRepo.search(keyword)

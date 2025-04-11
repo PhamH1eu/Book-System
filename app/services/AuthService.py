@@ -79,6 +79,9 @@ def blacklist_tokens(access_token, redis: Redis) -> None:
     username = decode_token(access_token)
     redis.set(f"TOKEN_BLACK_LIST_{username}", 1, ex=timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS))
 
+def unblacklist_tokens(access_token, redis: Redis) -> None:
+    username = decode_token(access_token)
+    redis.delete(f"TOKEN_BLACK_LIST_{username}")
 
 def is_token_blacklisted(token: str, redis: Redis) -> bool:
     username = decode_token(token)
@@ -131,6 +134,7 @@ def sign_in(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     response: Response,
     authRepo: UserRepository = Depends(),
+    redis: Redis = Depends(get_redis),
 ) -> Token:
     user = authenticate_user(form_data.username, form_data.password, authRepo)
     if not user:
@@ -152,6 +156,7 @@ def sign_in(
         samesite="None",
         secure=True,
     )
+    unblacklist_tokens(refresh_token, redis)
     return Token(access_token=access_token, token_type="bearer")
 
 

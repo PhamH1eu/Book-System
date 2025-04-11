@@ -1,9 +1,11 @@
 from typing import List
 
-from app.configs.Database import get_session
 from fastapi import Depends
+from sqlmodel import Session, select, text
+
+from app.configs.Database import get_session
 from app.models.BookModel import Book
-from sqlmodel import Session, select
+
 
 class BookRepository:
     db: Session
@@ -32,3 +34,8 @@ class BookRepository:
     def delete(self, book: Book) -> None:
         self.db.delete(book)
         self.db.commit()
+
+    def search(self, keyword: str):
+        query = text("SELECT * FROM book WHERE tsv @@ to_tsquery(:keyword)")
+        results = self.db.exec(query, {"keyword": keyword}).all()
+        return [Book.model_validate(result) for result in results]
